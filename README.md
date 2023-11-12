@@ -7,3 +7,12 @@
 ## model
 - 關於模型的各種東西
 - 包括超參數的設定，Optimizer，使用的 model，訓練與生成等等
+
+
+## 使用
+```
+目前需要送入這樣的 data 進入 model 之中
+"<|endoftext|>Episode No:  09F016547J\n####"
+
+他會相對生成 "IDNUM:09F016547J" 這樣的資料
+```
