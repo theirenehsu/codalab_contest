@@ -7,7 +7,7 @@ class GPTDataset(Dataset):
         self.tokenizer = tokenizer
         self.special_tokens_dict = special_tokens_dict
         self.pad_idx = pad_idx
-
+        
     def __len__(self):
         return len(self.seq_pairs)
 

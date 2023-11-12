@@ -7,18 +7,18 @@ def process_annotation_file(lines):
         if len(items) == 5:
             item_dict = {
                 'phi' : items [1],
-                'st idx' :int (items [2]),
+                'st_idx' :int (items [2]),
                 'ed_idx' : int(items [3]),
                 'entity' : items [4],
             }
         elif len(items) == 6:
             item_dict = {
-            'ohi' : items[1],
-            'st idx' : int(items [2]),
-            'ed idx' :int(items [3]),
+            'phi' : items[1],
+            'st_idx' : int(items [2]),
+            'ed_idx' :int(items [3]),
             'entity': items [4],
             'normalize time' : items [5],}
-
+        
         if items[0] not in entity_dict:
             entity_dict[items[0]] = [item_dict]
         else:
@@ -26,11 +26,13 @@ def process_annotation_file(lines):
     return entity_dict
 
 
-def generate_annotated_medical_report(anno_file_path, titanate):
-    anno_lines = read_file(anno_file_path)
-    annos_dict = process_annotation_file(anno_lines)
-    pass
-    '''TODO'''
+def generate_annotated_medical_report(anno_file_path):
+    with open(anno_file_path, "r") as f:
+        anno_lines = f.readlines()
+        annos_dict = process_annotation_file(anno_lines)
+        return annos_dict
+        # pass
+        # '''TODO'''
 
 
 def process_medical_report(txt_name, medical_report_folder, annos_dict, special_tokens_dict):

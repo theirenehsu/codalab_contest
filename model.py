@@ -23,7 +23,7 @@ def sample_text(model, tokenizer, text, n_words=100):
             inputs = torch.multinomial(log_probs, 1)
             generated_text.append(inputs.item())
 
-            if tokenizer.decode(inputs.item()) == eos:  # 定义 eos 作为终止标记
+            if tokenizer.decode(inputs.item()) == "<|END|>":  # 定义 eos 作为终止标记
                 break
 
     return tokenizer.decode(generated_text)
@@ -38,13 +38,14 @@ plm = "EleutherAI/pythia-70m"
 tokenizer = AutoTokenizer.from_pretrained(plm)
 special_tokens_dict = {"bos_token": "<|endoftext|>", "sep_token": "####", "eos_token": "<|END|>"}  
 tokenizer.add_special_tokens(special_tokens_dict)
+annos_dict = data_preprocess.generate_annotated_medical_report("sample_data/annotation.txt")
 
 
 PAD_IDX = tokenizer.convert_tokens_to_ids(tokenizer.pad_token)
 
-seq_pairs = data_preprocess.process_medical_report(...)
+seq_pairs = data_preprocess.process_medical_report("10", "sample_data", annos_dict, special_tokens_dict)
 
-tr_dataset = GPTDataset(seq_pairs, tokenizer, special_tokens_dict, PAD_IDX)
+tr_dataset = GPTDataset(seq_pairs, tokenizer, special_tokens_dict, 0)
 
 # 创建数据加载器
 bucket_train_dataloader = DataLoader(tr_dataset, batch_size=BATCH_SIZE, collate_fn=tr_dataset.collate_batch)
@@ -70,7 +71,7 @@ optimizer_grouped_parameters = [
 # 创建 AdamW 优化器
 optimizer = AdamW(optimizer_grouped_parameters, lr=3e-5)
 
-epochs = 20
+epochs = 30
 
 # 设定使用的设备（GPU 或 CPU）
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -83,10 +84,9 @@ for _ in trange(epochs, desc="Epoch"):
     total_loss = 0.0
 
     for step, (seqs, labels, masks) in enumerate(bucket_train_dataloader):
-        segs = seqs.to(device)
+        seqs = seqs.to(device)
         labels = labels.to(device)
         masks = masks.to(device)
-
         # 梯度清零
         model.zero_grad()
 
@@ -106,6 +106,5 @@ for _ in trange(epochs, desc="Epoch"):
 
     print(f"Epoch {_ + 1}, Average Loss: {avg_loss}")
 
-
-generated_text = sample_text(model, tokenizer, "Starting text for generation", n_words=100)
+generated_text = sample_text(model, tokenizer, "<|endoftext|>Episode No:  09F016547J\n####", n_words=100)
 print(generated_text)
