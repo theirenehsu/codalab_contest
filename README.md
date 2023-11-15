@@ -16,3 +16,7 @@
 
 他會相對生成 "IDNUM:09F016547J" 這樣的資料
 ```
+
+## 筆記
+- AutoModelForCausalLM
+    - 只能使用 from_pretrained 或者是 from_config
