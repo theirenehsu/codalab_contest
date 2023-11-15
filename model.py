@@ -6,7 +6,7 @@ from transformers import AdamW
 from data_set import GPTDataset
 import data_preprocess
 from tqdm import trange
-
+import os
 
 def sample_text(model, tokenizer, text, n_words=100):
     model.eval()
@@ -38,12 +38,20 @@ plm = "EleutherAI/pythia-70m"
 tokenizer = AutoTokenizer.from_pretrained(plm)
 special_tokens_dict = {"bos_token": "<|endoftext|>", "sep_token": "####", "eos_token": "<|END|>"}  
 tokenizer.add_special_tokens(special_tokens_dict)
-annos_dict = data_preprocess.generate_annotated_medical_report("sample_data/annotation.txt")
+annotation_data_path = "sample_data/answer.txt"
+annos_dict = data_preprocess.generate_annotated_medical_report(annotation_data_path)
 
 
 PAD_IDX = tokenizer.convert_tokens_to_ids(tokenizer.pad_token)
+seq_pairs = []
 
-seq_pairs = data_preprocess.process_medical_report("10", "sample_data", annos_dict, special_tokens_dict)
+train_data_path = "sample_data/First_Phase_Text_Dataset"
+
+file_names = os.listdir(train_data_path)
+for file_name in file_names:
+    file_name = file_name.replace(".txt", "")
+    seq_pairs.extend(data_preprocess.process_medical_report(file_name, train_data_path, annos_dict, special_tokens_dict))
+
 
 tr_dataset = GPTDataset(seq_pairs, tokenizer, special_tokens_dict, 0)
 
@@ -71,10 +79,11 @@ optimizer_grouped_parameters = [
 # 创建 AdamW 优化器
 optimizer = AdamW(optimizer_grouped_parameters, lr=3e-5)
 
-epochs = 30
+epochs = 10
 
 # 设定使用的设备（GPU 或 CPU）
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('mps') # 如果你是 macbook m1 以上，可以嘗試使用這個
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 
@@ -88,6 +97,7 @@ for _ in trange(epochs, desc="Epoch"):
         labels = labels.to(device)
         masks = masks.to(device)
         # 梯度清零
+        model.to(device) # 如果是 M1 並且有開 mps 這一行在加不然可以助解掉
         model.zero_grad()
 
         # 模型向前传播
@@ -106,5 +116,5 @@ for _ in trange(epochs, desc="Epoch"):
 
     print(f"Epoch {_ + 1}, Average Loss: {avg_loss}")
 
-generated_text = sample_text(model, tokenizer, "<|endoftext|>Episode No:  09F016547J\n####", n_words=100)
+generated_text = sample_text(model, tokenizer, "<|endoftext|>PERROTT, GILBERTE LOWELL\n####", n_words=100)
 print(generated_text)

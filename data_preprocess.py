@@ -27,15 +27,18 @@ def process_annotation_file(lines):
 
 
 def generate_annotated_medical_report(anno_file_path):
+    '''
+    有可能是關於生成 annotation data 的前置作業
+    '''
     with open(anno_file_path, "r") as f:
         anno_lines = f.readlines()
         annos_dict = process_annotation_file(anno_lines)
         return annos_dict
-        # pass
-        # '''TODO'''
-
 
 def process_medical_report(txt_name, medical_report_folder, annos_dict, special_tokens_dict):
+    '''
+    生成 training data
+    '''
     file_name = txt_name + '.txt'
     sents = open(os.path.join(medical_report_folder, file_name), "r").readlines()
     article = "".join(sents)
@@ -61,5 +64,12 @@ def process_medical_report(txt_name, medical_report_folder, annos_dict, special_
             temp_seq = ""
     return seq_pairs
 
-
-
+# testing
+if __name__ == "__main__":
+    special_tokens_dict = {"bos_token": "<|endoftext|>", "sep_token": "####", "eos_token": "<|END|>"}  
+    annos_dict = generate_annotated_medical_report("First_Phase_Release(Correction)/answer.txt")
+    seq_pairs = []
+    file_names = os.listdir("First_Phase_Release(Correction)/First_Phase_Text_Dataset")
+    for file_name in file_names:
+        file_name = file_name.replace(".txt", "")
+        seq_pairs.extend(process_medical_report(file_name, "First_Phase_Release(Correction)/First_Phase_Text_Dataset", annos_dict, special_tokens_dict))
