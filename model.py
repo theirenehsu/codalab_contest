@@ -41,12 +41,13 @@ tokenizer.add_special_tokens(special_tokens_dict)
 annotation_data_path = "sample_data/answer.txt"
 annos_dict = data_preprocess.generate_annotated_medical_report(annotation_data_path)
 
-
+# 目前還等待理解這一段
 PAD_IDX = tokenizer.convert_tokens_to_ids(tokenizer.pad_token)
-seq_pairs = []
 
+seq_pairs = []
 train_data_path = "sample_data/First_Phase_Text_Dataset"
 
+# 讀取該資料夾下的所有資料，往前迭代並且傳至 data_preprocess 去生成訓練資料
 file_names = os.listdir(train_data_path)
 for file_name in file_names:
     file_name = file_name.replace(".txt", "")
@@ -55,14 +56,15 @@ for file_name in file_names:
 
 tr_dataset = GPTDataset(seq_pairs, tokenizer, special_tokens_dict, 0)
 
-# 创建数据加载器
+# 創建 DataLoader
 bucket_train_dataloader = DataLoader(tr_dataset, batch_size=BATCH_SIZE, collate_fn=tr_dataset.collate_batch)
 
-# 创建模型
+# 創建模型
 model = AutoModelForCausalLM.from_pretrained(plm)
 model.resize_token_embeddings(len(tokenizer))
 
 
+# 目前還等待理解這一段
 param_optimizer = list(model.named_parameters())
 
 # 不需要权重衰减（weight decay）的参数
@@ -76,12 +78,12 @@ optimizer_grouped_parameters = [
      'weight_decay_rate': 0.01}
 ]
 
-# 创建 AdamW 优化器
+# 創建 AdamW 優化器
 optimizer = AdamW(optimizer_grouped_parameters, lr=3e-5)
 
 epochs = 10
 
-# 设定使用的设备（GPU 或 CPU）
+# 使用哪個資源做訓練（GPU or CPU or MPS）
 device = torch.device('mps') # 如果你是 macbook m1 以上，可以嘗試使用這個
 # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -91,16 +93,18 @@ for _ in trange(epochs, desc="Epoch"):
     model.train()  # 设置模型为训练模式
 
     total_loss = 0.0
-
+    # 看起來是迭代 DataLoader 的資料
     for step, (seqs, labels, masks) in enumerate(bucket_train_dataloader):
         seqs = seqs.to(device)
         labels = labels.to(device)
         masks = masks.to(device)
-        # 梯度清零
         model.to(device) # 如果是 M1 並且有開 mps 這一行在加不然可以助解掉
+        
+        # 目前梯度歸零要再思考一下
+        # 梯度清零
         model.zero_grad()
 
-        # 模型向前传播
+        # 模型向前傳遞
         outputs = model(seqs, labels=labels, attention_mask=masks)
         logits = outputs.logits
         loss = outputs.loss
@@ -108,13 +112,14 @@ for _ in trange(epochs, desc="Epoch"):
 
         total_loss += loss.item()
 
-        loss.backward()  # 向后传播计算损失梯度
+        loss.backward()  # 向後傳遞
         optimizer.step()
 
-    # 计算每个 epoch 的平均损失
+    # 計算每個 epoch 平均loss
     avg_loss = total_loss / len(bucket_train_dataloader)
 
     print(f"Epoch {_ + 1}, Average Loss: {avg_loss}")
 
+# 生成資料
 generated_text = sample_text(model, tokenizer, "<|endoftext|>PERROTT, GILBERTE LOWELL\n####", n_words=100)
 print(generated_text)
